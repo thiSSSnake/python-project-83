@@ -41,6 +41,7 @@
                 <tr>
                     <td>{{ url.id }}</td>
                     <td><a href="{{ url_for('urls_id', id_=url.id) }}">{{ url.name }}</a></td>
+                    <td>{{url.last_check}}</td>
                 </tr>
                 {% endfor %}
             {% endif %}

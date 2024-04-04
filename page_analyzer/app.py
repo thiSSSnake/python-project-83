@@ -24,7 +24,7 @@ def index():
         'index.html'
     )
 
-
+#TODO: вынести в отдельный модуль
 def validate(url):
     error = None
 
@@ -40,22 +40,27 @@ def validate(url):
     validation = {'url': url, 'error': error}
     return validation
 
-
+#TODO: вынести в отдельный модуль
 def get_all_urls():
     conn = psycopg2.connect(DATABASE_URL)
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
 
         query_s = '''SELECT DISTINCT ON (urls.id)
         urls.id AS id,
-        urls.name AS name
+        urls.name AS name,
+        url_checks.created_at AS last_check
         FROM urls
+        LEFT JOIN url_checks ON urls.id = url_checks.url_id
+        AND url_checks.id = (SELECT MAX(id)
+                            FROM url_checks
+                            WHERE url_id = urls.id)
         ORDER BY urls.id DESC'''
         cur.execute(query_s)
         all_urls = cur.fetchall()
     conn.close()
     return all_urls
 
-
+#TODO: вынести в отдельный модуль
 def get_url_by_name(name_url):
     conn = psycopg2.connect(DATABASE_URL)
 
@@ -66,7 +71,8 @@ def get_url_by_name(name_url):
     conn.close()
     return urls
 
-
+# получение юрл из таблицы по id
+#TODO: вынести в отдельный модуль
 def get_url_by_id(id_):
     conn = psycopg2.connect(DATABASE_URL)
 
@@ -77,7 +83,7 @@ def get_url_by_id(id_):
     conn.close()
     return urls
 
-
+#TODO: вынести логику добавления данных в таблицу urls в отдельный модуль
 @app.post('/urls')
 def post_url():
     conn = psycopg2.connect(DATABASE_URL)
@@ -119,8 +125,9 @@ def post_url():
 @app.route('/urls/<int:id_>')
 def urls_id(id_):
     url = get_url_by_id(id_)
+    checks = get_checks_by_id(id_)
     messages = get_flashed_messages(with_categories=True)
-    return render_template('show_url.html', url=url, messages=messages)
+    return render_template('show_url.html', url=url, checks=checks, messages=messages)
 
 
 @app.get('/urls')
@@ -128,6 +135,32 @@ def get_urls():
     urls = get_all_urls()
     return render_template('urls.html', urls=urls)
 
+# запрос берущий данные из таблицы url_checks для проверок сайтов
+##TODO: вынести в отдельный модуль
+def get_checks_by_id(id_):
+    conn = psycopg2.connect(DATABASE_URL)
+    with conn.cursor(cursor_factory=RealDictCursor) as curs:
+        query_s = '''SELECT * FROM url_checks WHERE url_id=(%s) ORDER BY id DESC'''
+        curs.execute(query_s, [id_])
+        checks = curs.fetchall()
+    conn.close()
+    return checks
+
+# Добавление в таблицу url_checks данных, пост запрос на форму для проверки сайта, редирект на /urls/<int:id_>
+##TODO: вынести отдельно логику добавления данных в таблицу
+@app.post('/urls/<int:id_>/checks')
+def url_check(id_):
+    conn = psycopg2.connect(DATABASE_URL)
+    url = get_url_by_id(id_)
+
+    with conn.cursor() as curs:
+        query_s = '''INSERT INTO url_checks(url_id, created_at) VALUES(%s, %s)'''
+        url = {'id': id_, 'created_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        curs.execute(query_s, (url['id'], url['created_at']))
+        conn.commit()
+    conn.close()
+
+    return redirect(url_for('urls_id', id_ = id_))
 
 
 if __name__ == '__main__':
