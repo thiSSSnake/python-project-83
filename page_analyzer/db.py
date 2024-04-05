@@ -15,15 +15,16 @@ def get_all_urls():
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
 
         query_s = '''SELECT DISTINCT ON (urls.id)
-        urls.id AS id,
-        urls.name AS name,
-        url_checks.created_at AS last_check
-        FROM urls
-        LEFT JOIN url_checks ON urls.id = url_checks.url_id
-        AND url_checks.id = (SELECT MAX(id)
-                            FROM url_checks
-                            WHERE url_id = urls.id)
-        ORDER BY urls.id DESC'''
+                        urls.id AS id,
+                        urls.name AS name,
+                        url_checks.created_at AS last_check,
+                        url_checks.status_code AS status_code
+                    FROM urls
+                    LEFT JOIN url_checks ON urls.id = url_checks.url_id
+                    AND url_checks.id = (SELECT MAX(id)
+                                        FROM url_checks
+                                        WHERE url_id = urls.id)
+                    ORDER BY urls.id DESC'''
         cur.execute(query_s)
         all_urls = cur.fetchall()
     conn.close()
@@ -79,11 +80,10 @@ def add_site_to_urls(url):
     conn.close()
 
 
-def add_site_to_url_checks(id_):
+def add_site_to_url_checks(check):
     conn = psycopg2.connect(DATABASE_URL)
     with conn.cursor() as curs:
-        query_s = '''INSERT INTO url_checks(url_id, created_at) VALUES(%s, %s)'''
-        url = {'id': id_, 'created_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-        curs.execute(query_s, (url['id'], url['created_at']))
+        query_s = '''INSERT INTO url_checks(url_id, created_at, status_code) VALUES(%s, %s, %s)'''
+        curs.execute(query_s, (check['url_id'], check['created_at'], check['status_code']))
         conn.commit()
     conn.close()

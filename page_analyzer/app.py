@@ -1,12 +1,12 @@
 from flask import Flask, request, render_template, redirect, url_for, flash, get_flashed_messages
 import os
-# from datetime import datetime
 import psycopg2
-# from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
-# from urllib.parse import urlparse
+from datetime import datetime
 import validators
 from page_analyzer.db import add_site_to_urls, normalize_url, add_site_to_url_checks, get_url_by_id, get_checks_by_id, get_url_by_name, get_all_urls
+from page_analyzer.check import get_url_data
+import requests
 
 
 load_dotenv()
@@ -88,7 +88,18 @@ def get_urls():
 
 @app.post('/urls/<int:id_>/checks')
 def url_check(id_):
-    add_site_to_url_checks(id_)
+    url = get_url_by_id(id_)['name']
+    try:
+        check = get_url_data(url)
+        check['url_id'] = id_
+        check['created_at'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        add_site_to_url_checks(check)
+
+        flash('Страница успешно проверена', 'alert-success')
+
+    except requests.RequestException:
+        flash('Произошла ошибка при проверке', 'alert-danger')
+
     return redirect(url_for('urls_id', id_ = id_))
 
 
