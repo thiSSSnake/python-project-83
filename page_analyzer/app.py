@@ -1,11 +1,12 @@
 from flask import Flask, request, render_template, redirect, url_for, flash, get_flashed_messages
 import os
-from datetime import datetime
+# from datetime import datetime
 import psycopg2
-from psycopg2.extras import RealDictCursor
+# from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
-from urllib.parse import urlparse
+# from urllib.parse import urlparse
 import validators
+from page_analyzer.db import add_site_to_urls, normalize_url, add_site_to_url_checks, get_url_by_id, get_checks_by_id, get_url_by_name, get_all_urls
 
 
 load_dotenv()
@@ -24,7 +25,7 @@ def index():
         'index.html'
     )
 
-#TODO: вынести в отдельный модуль
+
 def validate(url):
     error = None
 
@@ -40,53 +41,9 @@ def validate(url):
     validation = {'url': url, 'error': error}
     return validation
 
-#TODO: вынести в отдельный модуль
-def get_all_urls():
-    conn = psycopg2.connect(DATABASE_URL)
-    with conn.cursor(cursor_factory=RealDictCursor) as cur:
 
-        query_s = '''SELECT DISTINCT ON (urls.id)
-        urls.id AS id,
-        urls.name AS name,
-        url_checks.created_at AS last_check
-        FROM urls
-        LEFT JOIN url_checks ON urls.id = url_checks.url_id
-        AND url_checks.id = (SELECT MAX(id)
-                            FROM url_checks
-                            WHERE url_id = urls.id)
-        ORDER BY urls.id DESC'''
-        cur.execute(query_s)
-        all_urls = cur.fetchall()
-    conn.close()
-    return all_urls
-
-#TODO: вынести в отдельный модуль
-def get_url_by_name(name_url):
-    conn = psycopg2.connect(DATABASE_URL)
-
-    with conn.cursor(cursor_factory=RealDictCursor) as curs:
-        query_s = 'SELECT * FROM urls WHERE name=(%s)'
-        curs.execute(query_s, [name_url])
-        urls = curs.fetchone()
-    conn.close()
-    return urls
-
-# получение юрл из таблицы по id
-#TODO: вынести в отдельный модуль
-def get_url_by_id(id_):
-    conn = psycopg2.connect(DATABASE_URL)
-
-    with conn.cursor(cursor_factory=RealDictCursor) as curs:
-        query_s = '''SELECT * FROM urls WHERE id=(%s)'''
-        curs.execute(query_s, [id_])
-        urls = curs.fetchone()
-    conn.close()
-    return urls
-
-#TODO: вынести логику добавления данных в таблицу urls в отдельный модуль
 @app.post('/urls')
 def post_url():
-    conn = psycopg2.connect(DATABASE_URL)
     url = request.form.get('url')
     valid = validate(url)
     error = valid['error']
@@ -109,15 +66,8 @@ def post_url():
                     messages=messages
                 ), 422
     else:
-        with conn.cursor() as curs:
-            query_s = '''INSERT INTO urls(name, created_at) VALUES(%s, %s)'''
-            parsed_url = urlparse(url)
-            normalize_url = '' + parsed_url.scheme + '://' + parsed_url.netloc
-            site = {'url': normalize_url, 'created_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-            curs.execute(query_s, (site['url'], site['created_at']))
-            conn.commit()
-        conn.close()
-        id_ = get_url_by_name(normalize_url)['id']
+        add_site_to_urls(url)
+        id_ = get_url_by_name(normalize_url(url))['id']
         flash('Страница успешно добавлена', 'alert-success')
         return redirect(url_for('urls_id', id_ = id_))
 
@@ -135,31 +85,10 @@ def get_urls():
     urls = get_all_urls()
     return render_template('urls.html', urls=urls)
 
-# запрос берущий данные из таблицы url_checks для проверок сайтов
-##TODO: вынести в отдельный модуль
-def get_checks_by_id(id_):
-    conn = psycopg2.connect(DATABASE_URL)
-    with conn.cursor(cursor_factory=RealDictCursor) as curs:
-        query_s = '''SELECT * FROM url_checks WHERE url_id=(%s) ORDER BY id DESC'''
-        curs.execute(query_s, [id_])
-        checks = curs.fetchall()
-    conn.close()
-    return checks
 
-# Добавление в таблицу url_checks данных, пост запрос на форму для проверки сайта, редирект на /urls/<int:id_>
-##TODO: вынести отдельно логику добавления данных в таблицу
 @app.post('/urls/<int:id_>/checks')
 def url_check(id_):
-    conn = psycopg2.connect(DATABASE_URL)
-    url = get_url_by_id(id_)
-
-    with conn.cursor() as curs:
-        query_s = '''INSERT INTO url_checks(url_id, created_at) VALUES(%s, %s)'''
-        url = {'id': id_, 'created_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-        curs.execute(query_s, (url['id'], url['created_at']))
-        conn.commit()
-    conn.close()
-
+    add_site_to_url_checks(id_)
     return redirect(url_for('urls_id', id_ = id_))
 
 
