@@ -83,7 +83,7 @@ def add_site_to_urls(url):
 def add_site_to_url_checks(check):
     conn = psycopg2.connect(DATABASE_URL)
     with conn.cursor() as curs:
-        query_s = '''INSERT INTO url_checks(url_id, created_at, status_code) VALUES(%s, %s, %s)'''
-        curs.execute(query_s, (check['url_id'], check['created_at'], check['status_code']))
+        query_s = '''INSERT INTO url_checks(url_id, created_at, status_code, h1, description, title) VALUES(%s, %s, %s, %s, %s, %s)'''
+        curs.execute(query_s, (check['url_id'], check['created_at'], check['status_code'], check['h1'], check['description'], check['title']))
         conn.commit()
     conn.close()
