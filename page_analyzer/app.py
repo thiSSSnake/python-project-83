@@ -40,8 +40,11 @@ def post_url():
                 flash('Некорректный URL', 'alert-danger')
             elif error == 'length':
                 flash('URL превышает 255 символов', 'alert-danger')
+
             elif error == 'exist':
-                flash('Страница уже существует', 'alert-danger')
+                flash('Страница уже существует', 'alert-success')
+                id_ = get_url_by_name(normalize_url(url))['id']
+                return redirect(url_for('urls_id', id_ = id_))
 
             messages = get_flashed_messages(with_categories=True)
             return render_template(
