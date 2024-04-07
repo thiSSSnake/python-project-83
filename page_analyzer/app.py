@@ -36,11 +36,12 @@ def post_url():
             messages = get_flashed_messages(with_categories=True)
             return render_template('index.html', url=url, messages=messages), 422
         else:
-
             if error == 'zero':
-                flash('URL обязателен', 'alert-danger')
+                flash('Некорректный URL', 'alert-danger')
             elif error == 'length':
                 flash('URL превышает 255 символов', 'alert-danger')
+            elif error == 'exist':
+                flash('Страница уже существует', 'alert-danger')
 
             messages = get_flashed_messages(with_categories=True)
             return render_template(
