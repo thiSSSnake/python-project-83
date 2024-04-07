@@ -56,7 +56,8 @@ def get_url_by_id(id_):
 def get_checks_by_id(id_):
     conn = psycopg2.connect(DATABASE_URL)
     with conn.cursor(cursor_factory=RealDictCursor) as curs:
-        query_s = '''SELECT * FROM url_checks WHERE url_id=(%s) ORDER BY id DESC'''
+        query_s = '''SELECT * FROM url_checks
+                        WHERE url_id=(%s) ORDER BY id DESC'''
         curs.execute(query_s, [id_])
         checks = curs.fetchall()
     conn.close()
@@ -64,26 +65,42 @@ def get_checks_by_id(id_):
 
 
 def normalize_url(url):
-      parsed_url = urlparse(url)
-      normalize_url = '' + parsed_url.scheme + '://' + parsed_url.netloc
-      return normalize_url
+    parsed_url = urlparse(url)
+    normalize_url = '' + parsed_url.scheme + '://' + parsed_url.netloc
+    return normalize_url
 
 
 def add_site_to_urls(url):
     conn = psycopg2.connect(DATABASE_URL)
     with conn.cursor() as curs:
-            query_s = '''INSERT INTO urls(name, created_at) VALUES(%s, %s)'''
-            url = normalize_url(url)
-            site = {'url': url, 'created_at': datetime.now().date().strftime("%Y-%m-%d")}
-            curs.execute(query_s, (site['url'], site['created_at']))
-            conn.commit()
+        query_s = '''INSERT INTO urls(name, created_at) VALUES(%s, %s)'''
+        url = normalize_url(url)
+        site = {
+            'url': url,
+            'created_at': datetime.now().date().strftime("%Y-%m-%d")
+            }
+        curs.execute(query_s, (site['url'], site['created_at']))
+        conn.commit()
     conn.close()
 
 
 def add_site_to_url_checks(check):
     conn = psycopg2.connect(DATABASE_URL)
     with conn.cursor() as curs:
-        query_s = '''INSERT INTO url_checks(url_id, created_at, status_code, h1, description, title) VALUES(%s, %s, %s, %s, %s, %s)'''
-        curs.execute(query_s, (check['url_id'], check['created_at'], check['status_code'], check['h1'], check['description'], check['title']))
+        query_s = '''INSERT INTO url_checks(
+                        url_id,
+                        created_at,
+                        status_code,
+                        h1,
+                        description,
+                        title)
+                        VALUES(%s, %s, %s, %s, %s, %s)'''
+        curs.execute(query_s, (
+            check['url_id'],
+            check['created_at'],
+            check['status_code'],
+            check['h1'],
+            check['description'],
+            check['title']))
         conn.commit()
     conn.close()

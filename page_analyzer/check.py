@@ -25,13 +25,10 @@ def validate(url):
     error = None
     if check_if_exist(url):
         error = 'exist'
-
     if len(url) == 0:
         error = 'zero'
-
     elif len(url) > 255:
         error = 'length'
-    
     elif not validators.url(url):
         error = 'invalid'
 
@@ -51,7 +48,8 @@ def get_url_data(url):
     description_tag = soup.find('meta', attrs={'name': 'description'})
     title_tag = soup.find('title')
     h1_tag = soup.find('h1')
-    check['description'] = description_tag['content'].strip() if description_tag else ''
+    check['description'] = description_tag['content'].strip() \
+        if description_tag else ''
     check['title'] = title_tag.text.strip() if title_tag else ''
     check['h1'] = h1_tag.text.strip() if h1_tag else ''
     return check

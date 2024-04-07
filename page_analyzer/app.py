@@ -1,9 +1,21 @@
-from flask import Flask, request, render_template, redirect, url_for, flash, get_flashed_messages
+from flask import (Flask,
+                   request,
+                   render_template,
+                   redirect,
+                   url_for,
+                   flash,
+                   get_flashed_messages)
 import os
 import psycopg2
 from dotenv import load_dotenv
 from datetime import datetime
-from page_analyzer.db import add_site_to_urls, normalize_url, add_site_to_url_checks, get_url_by_id, get_checks_by_id, get_url_by_name, get_all_urls
+from page_analyzer.db import (add_site_to_urls,
+                              normalize_url,
+                              add_site_to_url_checks,
+                              get_url_by_id,
+                              get_checks_by_id,
+                              get_url_by_name,
+                              get_all_urls)
 from page_analyzer.check import get_url_data, validate
 import requests
 
@@ -34,7 +46,10 @@ def post_url():
         if error == 'invalid':
             flash('Некорректный URL', 'alert-danger')
             messages = get_flashed_messages(with_categories=True)
-            return render_template('index.html', url=url, messages=messages), 422
+            return render_template(
+                'index.html',
+                url=url,
+                messages=messages), 422
         else:
             if error == 'zero':
                 flash('Некорректный URL', 'alert-danger')
@@ -44,19 +59,19 @@ def post_url():
             elif error == 'exist':
                 flash('Страница уже существует', 'alert-success')
                 id_ = get_url_by_name(normalize_url(url))['id']
-                return redirect(url_for('urls_id', id_ = id_))
+                return redirect(url_for('urls_id', id_=id_))
 
             messages = get_flashed_messages(with_categories=True)
             return render_template(
                     'index.html',
                     url=url,
                     messages=messages
-                ), 422
+                    ), 422
     else:
         add_site_to_urls(url)
         id_ = get_url_by_name(normalize_url(url))['id']
         flash('Страница успешно добавлена', 'alert-success')
-        return redirect(url_for('urls_id', id_ = id_))
+        return redirect(url_for('urls_id', id_=id_))
 
 
 @app.route('/urls/<int:id_>')
@@ -64,7 +79,11 @@ def urls_id(id_):
     url = get_url_by_id(id_)
     checks = get_checks_by_id(id_)
     messages = get_flashed_messages(with_categories=True)
-    return render_template('show_url.html', url=url, checks=checks, messages=messages)
+    return render_template(
+        'show_url.html',
+        url=url,
+        checks=checks,
+        messages=messages)
 
 
 @app.get('/urls')
@@ -87,7 +106,7 @@ def url_check(id_):
     except requests.RequestException:
         flash('Произошла ошибка при проверке', 'alert-danger')
 
-    return redirect(url_for('urls_id', id_ = id_))
+    return redirect(url_for('urls_id', id_=id_))
 
 
 if __name__ == '__main__':
