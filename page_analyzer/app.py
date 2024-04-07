@@ -79,7 +79,7 @@ def url_check(id_):
     try:
         check = get_url_data(url)
         check['url_id'] = id_
-        check['created_at'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        check['created_at'] = datetime.now().date().strftime("%Y-%m-%d")
         add_site_to_url_checks(check)
 
         flash('Страница успешно проверена', 'alert-success')

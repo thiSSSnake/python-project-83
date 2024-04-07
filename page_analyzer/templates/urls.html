@@ -28,24 +28,27 @@
 
     
 <div class="table-responsive">
-    <table class="table table-bordered table-hover text-nowrap" data-test="urls">
-        <tbody>
-            <tr>
-                <th>ID</th>
-                <th>Имя</th>
-                <th>Последняя проверка</th>
-                <th>Код ответа</th>
-            </tr>
-            {% if urls %}
-                {% for url in urls %}
-                <tr>
-                    <td>{{ url.id }}</td>
-                    <td><a href="{{ url_for('urls_id', id_=url.id) }}">{{ url.name }}</a></td>
-                    <td>{{url.last_check}}</td>
-                    <th>{{url.status_code}}</th>
-                </tr>
-                {% endfor %}
-            {% endif %}
+
+  <table class="table table-bordered table-hover text-nowrap" data-test="urls">
+    <thead>
+    <tr>
+      <th>ID</th>
+      <th>Имя</th>
+      <th>Последняя проверка</th>
+      <th>Код ответа</th>
+    </tr>
+    </thead>
+    <tbody>
+        {% if urls %}
+        {% for url in urls %}
+        <tr>
+          <td>{{ url.id }}</td>
+          <td><a href="{{ url_for('urls_id', id_=url.id) }}">{{ url.name }}</a></td>
+          <td>{{url.last_check if url.last_check is not none}}</td>
+          <td>{{ url.status_code if url.status_code is not none }}</td>
+        </tr>
+        {% endfor %}
+        {% endif %}
         </tbody>
     </table>
 </div>

@@ -48,25 +48,10 @@ def get_url_data(url):
 
     check = {'status_code': r.status_code}
 
-    for meta in soup.find_all('meta', {'name': 'description'}):
-        tag_content = meta.attrs['content'][:255]
-        if tag_content:
-            if len(tag_content) > 255:
-                tag_content += '...'
-        else:
-            check['description'] = ''
-        check['description'] = tag_content
-
+    description_tag = soup.find('meta', attrs={'name': 'description'})
+    title_tag = soup.find('title')
     h1_tag = soup.find('h1')
-    if h1_tag:
-        h1_content = h1_tag.text
-        check['h1'] = h1_content
-    else:
-        check['h1'] = ''
-
-    if soup.title:
-        check['title'] = soup.title.string
-    else:
-        check['title'] = ''
-
+    check['description'] = description_tag['content'].strip() if description_tag else ''
+    check['title'] = title_tag.text.strip() if title_tag else ''
+    check['h1'] = h1_tag.text.strip() if h1_tag else ''
     return check

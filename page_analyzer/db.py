@@ -24,7 +24,7 @@ def get_all_urls():
                     AND url_checks.id = (SELECT MAX(id)
                                         FROM url_checks
                                         WHERE url_id = urls.id)
-                    ORDER BY urls.id DESC'''
+                    ORDER BY urls.id DESC;'''
         cur.execute(query_s)
         all_urls = cur.fetchall()
     conn.close()
@@ -74,7 +74,7 @@ def add_site_to_urls(url):
     with conn.cursor() as curs:
             query_s = '''INSERT INTO urls(name, created_at) VALUES(%s, %s)'''
             url = normalize_url(url)
-            site = {'url': url, 'created_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+            site = {'url': url, 'created_at': datetime.now().date().strftime("%Y-%m-%d")}
             curs.execute(query_s, (site['url'], site['created_at']))
             conn.commit()
     conn.close()
