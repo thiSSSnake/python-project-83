@@ -63,9 +63,9 @@ def post_url():
 
             messages = get_flashed_messages(with_categories=True)
             return render_template(
-                    'index.html',
-                    url=url,
-                    messages=messages
+                'index.html',
+                url=url,
+                messages=messages
             ), 422
     else:
         add_site_to_urls(url)
