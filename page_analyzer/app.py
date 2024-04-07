@@ -66,7 +66,7 @@ def post_url():
                     'index.html',
                     url=url,
                     messages=messages
-                    ), 422
+            ), 422
     else:
         add_site_to_urls(url)
         id_ = get_url_by_name(normalize_url(url))['id']

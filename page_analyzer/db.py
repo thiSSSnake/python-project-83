@@ -78,7 +78,7 @@ def add_site_to_urls(url):
         site = {
             'url': url,
             'created_at': datetime.now().date().strftime("%Y-%m-%d")
-            }
+        }
         curs.execute(query_s, (site['url'], site['created_at']))
         conn.commit()
     conn.close()
