@@ -41,7 +41,7 @@ def validate(url):
 
 def get_url_data(url):
     r = requests.get(url)
-    soup = BeautifulSoup(r.content, 'html.parser')
+    soup = BeautifulSoup(r.text, 'html.parser')
 
     if r.status_code != 200:
         raise requests.RequestException
