@@ -44,7 +44,7 @@ def get_url_data(url):
     soup = BeautifulSoup(r.content, 'html.parser')
 
     if r.status_code != 200:
-        raise requests.Response.raise_for_status()
+        raise requests.RequestException
 
     check = {'status_code': r.status_code}
 
