@@ -82,7 +82,7 @@ def get_urls():
 def url_check(id_):
     url = get_url_by_id(id_)['name']
     if not url:
-        return render_template('404.html')
+        return render_template('404.html'), 404
     try:
         check = parsing_url_data(url)
         check['url_id'] = id_
