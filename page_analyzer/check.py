@@ -1,39 +1,20 @@
 import requests
 import validators
-import psycopg2
 import os
 from bs4 import BeautifulSoup
-from psycopg2.extras import RealDictCursor
-from page_analyzer.db import normalize_url
+from urllib.parse import urlparse
 
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 
-def check_if_exist(url):
-    conn = psycopg2.connect(DATABASE_URL)
-    norm_url = normalize_url(url)
-    with conn.cursor(cursor_factory=RealDictCursor) as curs:
-        query_s = '''SELECT * FROM urls WHERE name=(%s)'''
-        curs.execute(query_s, [norm_url])
-        existing_site = curs.fetchone()
-    conn.close()
-    return existing_site
-
-
 def validate(url):
-    error = None
-    if check_if_exist(url):
-        error = 'exist'
     if len(url) == 0:
-        error = 'zero'
+        return 'Некорректный URL'
     elif len(url) > 255:
-        error = 'length'
+        return 'URL превышает 255 символов'
     elif not validators.url(url):
-        error = 'invalid'
-
-    validation = {'url': url, 'error': error}
-    return validation
+        return 'Некорректный URL'
 
 
 def get_url_data(url):
@@ -41,15 +22,33 @@ def get_url_data(url):
     soup = BeautifulSoup(r.text, 'html.parser')
 
     if r.status_code != 200:
-        raise requests.RequestException
+        raise requests.Response.raise_for_status(r.status_code)
+    url_data = {'status_code': r.status_code}
 
-    check = {'status_code': r.status_code}
+    description = soup.find('meta', attrs={'name': 'description'})
+    description_tag = description['content']
 
-    description_tag = soup.find('meta', attrs={'name': 'description'})
-    title_tag = soup.find('title')
-    h1_tag = soup.find('h1')
-    check['description'] = description_tag['content'].strip() \
-        if description_tag else ''
-    check['title'] = title_tag.text.strip() if title_tag else ''
-    check['h1'] = h1_tag.text.strip() if h1_tag else ''
+    url_data['description_tag'] = description_tag
+    url_data['title_tag'] = soup.find('title')
+    url_data['h1_tag'] = soup.find('h1')
+    return url_data
+
+
+def parsing_url_data(url):
+    url_data = get_url_data(url)
+
+    check = {'status_code': url_data['status_code']}
+
+    check['description'] = url_data['description_tag'].strip() \
+        if url_data['description_tag'] else ''
+    check['title'] = url_data['title_tag'].text.strip() \
+        if url_data['title_tag'] else ''
+    check['h1'] = url_data['h1_tag'].text.strip() \
+        if url_data['h1_tag'] else ''
     return check
+
+
+def normalize_url(url):
+    parsed_url = urlparse(url)
+    normalize_url = '' + parsed_url.scheme + '://' + parsed_url.netloc
+    return normalize_url
