@@ -85,14 +85,14 @@ def url_check(id_):
         return render_template('404.html')
     try:
         check = parsing_url_data(url)
+        check['url_id'] = id_
+        check['created_at'] = datetime.now().date().strftime("%Y-%m-%d")
+        add_site_to_url_checks(check)
+        flash('Страница успешно проверена', 'alert-success')
 
     except requests.RequestException:
         flash('Произошла ошибка при проверке', 'alert-danger')
 
-    check['url_id'] = id_
-    check['created_at'] = datetime.now().date().strftime("%Y-%m-%d")
-    add_site_to_url_checks(check)
-    flash('Страница успешно проверена', 'alert-success')
     return redirect(url_for('urls_id', id_=id_))
 
 
