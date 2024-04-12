@@ -10,43 +10,24 @@ load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 
-def initial_curs_dict_empty(func):
-    def wrapper():
-        conn = psycopg2.connect(DATABASE_URL)
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as curs:
-                return func(curs)
-        finally:
-            conn.commit()
-            conn.close()
-    return wrapper
+def initialize_cursor(cursor_factory=None):
+    def decorator(func):
+        def wrapper(*args):
+            conn = psycopg2.connect(DATABASE_URL)
+            if cursor_factory:
+                with conn.cursor(cursor_factory=cursor_factory) as curs:
+                    return func(curs, *args)
+            elif not args:
+                with conn.cursor() as curs:
+                    return func(curs)
+            else:
+                with conn.cursor() as curs:
+                    return func(curs, *args)
+        return wrapper
+    return decorator
 
 
-def initial_curs_dict(func):
-    def wrapper(*args):
-        conn = psycopg2.connect(DATABASE_URL)
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as curs:
-                return func(curs, *args)
-        finally:
-            conn.commit()
-            conn.close()
-    return wrapper
-
-
-def initial_curs(func):
-    def wrapper(*args):
-        conn = psycopg2.connect(DATABASE_URL)
-        try:
-            with conn.cursor() as curs:
-                return func(curs, *args)
-        finally:
-            conn.commit()
-            conn.close()
-    return wrapper
-
-
-@initial_curs_dict_empty
+@initialize_cursor(cursor_factory=RealDictCursor)
 def get_all_urls(curs):
     query_s = '''SELECT DISTINCT ON (urls.id)
                     urls.id AS id,
@@ -61,38 +42,42 @@ def get_all_urls(curs):
                 ORDER BY urls.id DESC;'''
     curs.execute(query_s)
     all_urls = curs.fetchall()
+    curs.connection.commit()
     return all_urls
 
 
-@initial_curs_dict
+@initialize_cursor(cursor_factory=RealDictCursor)
 def get_url_by_name(curs, name_url):
     name_url = name_url
     query_s = 'SELECT * FROM urls WHERE name=(%s)'
     curs.execute(query_s, [name_url])
     urls = curs.fetchone()
+    curs.connection.commit()
     return urls
 
 
-@initial_curs_dict
+@initialize_cursor(cursor_factory=RealDictCursor)
 def get_url_by_id(curs, id_):
     id_ = id_
     query_s = '''SELECT * FROM urls WHERE id=(%s)'''
     curs.execute(query_s, [id_])
     urls = curs.fetchone()
+    curs.connection.commit()
     return urls
 
 
-@initial_curs_dict
+@initialize_cursor(cursor_factory=RealDictCursor)
 def get_checks_by_id(curs, id_):
     id_ = id_
     query_s = '''SELECT * FROM url_checks
                     WHERE url_id=(%s) ORDER BY id DESC'''
     curs.execute(query_s, [id_])
     checks = curs.fetchall()
+    curs.connection.commit()
     return checks
 
 
-@initial_curs
+@initialize_cursor(cursor_factory=None)
 def add_site_to_urls(curs, url):
     url = url
     query_s = '''INSERT INTO urls(name, created_at) VALUES(%s, %s)
@@ -104,10 +89,11 @@ def add_site_to_urls(curs, url):
     }
     curs.execute(query_s, (site['url'], site['created_at']))
     id_ = curs.fetchone()[0]
+    curs.connection.commit()
     return id_
 
 
-@initial_curs
+@initialize_cursor(cursor_factory=None)
 def add_site_to_url_checks(curs, check):
 
     check = check
@@ -126,9 +112,10 @@ def add_site_to_url_checks(curs, check):
         check['h1'],
         check['description'],
         check['title']))
+    curs.connection.commit()
 
 
-@initial_curs_dict
+@initialize_cursor(cursor_factory=RealDictCursor)
 def check_if_exist(curs, url):
     url = url
     norm_url = normalize_url(url)

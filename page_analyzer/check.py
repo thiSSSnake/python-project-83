@@ -17,18 +17,19 @@ def validate(url):
         return 'Некорректный URL'
 
 
-def get_url_data(url):
-    r = requests.get(url)
-    soup = BeautifulSoup(r.text, 'html.parser')
-
-    if requests.Response.raise_for_status(r):
+def get_html_content(url):
+    response = requests.get(url)
+    if requests.Response.raise_for_status(response):
         raise requests.RequestException
+    return response.text
 
-    url_data = {'status_code': r.status_code}
+
+def get_url_data(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
 
     description = soup.find('meta', attrs={'name': 'description'})
     description_tag = description['content']
-
+    url_data = {}
     url_data['description_tag'] = description_tag
     url_data['title_tag'] = soup.find('title')
     url_data['h1_tag'] = soup.find('h1')
@@ -36,9 +37,12 @@ def get_url_data(url):
 
 
 def parsing_url_data(url):
-    url_data = get_url_data(url)
+    html_content = get_html_content(url)
+    response = requests.get(url)
+    status_code = response.status_code
+    url_data = get_url_data(html_content)
 
-    check = {'status_code': url_data['status_code']}
+    check = {'status_code': status_code}
 
     check['description'] = url_data['description_tag'].strip() \
         if url_data['description_tag'] else ''
